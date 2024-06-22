@@ -44,6 +44,21 @@ public class GameUno implements IGameUno {
                 machinePlayer.addCard(this.deck.takeCard());
             }
         }
+
+        // Lanzar una carta numérica al iniciar el juego
+        Card initialCard;
+        do {
+            initialCard = deck.takeCard();
+        } while (!isNumericCard(initialCard));
+        table.addCardOnTheTable(initialCard);
+    }
+    private boolean isNumericCard(Card card) {
+        try {
+            Integer.parseInt(card.getValue());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     /**
@@ -67,6 +82,52 @@ public class GameUno implements IGameUno {
     @Override
     public void playCard(Card card) {
         this.table.addCardOnTheTable(card);
+    }
+    public boolean handleSpecialCards(Card card, Player player) {
+        // Verifica si la carta jugada es una carta +2
+        switch (card.getValue()) {
+            case "+2" -> {
+                // Si la carta jugada pertenece al jugador humano
+                if (player.equals(humanPlayer)) {
+                    // El jugador máquina toma 2 cartas
+                    eatCard(machinePlayer, 2);
+                } else {
+                    // El jugador humano toma 2 cartas
+                    eatCard(humanPlayer, 2);
+                }
+                return true;
+            }
+
+            // Verifica si la carta jugada es una carta +4
+            case "+4" -> {
+                // Si la carta jugada pertenece al jugador humano
+                if (player.equals(humanPlayer)) {
+                    // El jugador máquina toma 4 cartas
+                    eatCard(machinePlayer, 4);
+                } else {
+                    // El jugador humano toma 4 cartas
+                    eatCard(humanPlayer, 4);
+                }
+                return true;
+            }
+            case "SKIP"-> {
+                return true;}
+            case "RESERVE"-> {
+                return true;}
+
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    public boolean isCardPlayable(Card card, Card topCard) {
+        // Permitir jugar cualquier carta si la carta en la cima es NON_COLOR
+        return true;
+      /*  if (topCard.getColor().equals("NON_COLOR") || card.getColor().equals("NON_COLOR")) {
+            return true;
+        }
+        return card.getColor().equals(topCard.getColor()) || card.getValue().equals(topCard.getValue());*/
     }
 
     /**
