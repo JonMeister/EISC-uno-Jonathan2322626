@@ -3,6 +3,7 @@ package org.example.eiscuno.controller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -26,6 +27,10 @@ public class GameUnoController implements IMachineObserver {
 
     @FXML
     private ImageView tableImageView;
+    @FXML
+    private Button takeCardButton;
+    @FXML
+    private Button passTurnButton;
 
     private Player humanPlayer;
     private Player machinePlayer;
@@ -60,6 +65,9 @@ public class GameUnoController implements IMachineObserver {
         this.table = new Table();
         this.gameUno = new GameUno(this.humanPlayer, this.machinePlayer, this.deck, this.table);
         this.posInitCardToShow = 0;
+        takeCardButton.setDisable(false); // Habilitar el botón al iniciar el juego
+        passTurnButton.setDisable(true);
+
     }
 
     private void printCardsHumanPlayer() {
@@ -134,11 +142,20 @@ public class GameUnoController implements IMachineObserver {
         // Implement logic to take a card here
         gameUno.eatCard(humanPlayer,1);
         printCardsHumanPlayer();
+        takeCardButton.setDisable(true); // Deshabilitar el botón después de tomar una carta
+        passTurnButton.setDisable(false);
+
     }
 
     @FXML
     void onHandleUno(ActionEvent event) {
         // Implement logic to handle Uno event here
+    }
+    @FXML
+    void onHandlePassTurn(ActionEvent event) {
+        threadPlayMachine.setHasPlayerPlayed(true); // Pasar el turno a la máquina
+        takeCardButton.setDisable(true); // Deshabilitar el botón de tomar carta
+        passTurnButton.setDisable(true); // Deshabilitar el botón de pasar turno
     }
 
     @Override
@@ -156,11 +173,17 @@ public class GameUnoController implements IMachineObserver {
         for (Card card : humanPlayer.getCardsPlayer()) {
             card.getCard().setDisable(true);
         }
+        takeCardButton.setDisable(true); // Deshabilitar el botón de tomar cartas
+        passTurnButton.setDisable(true);
+
     }
 
     private void enablePlayerCards() {
         for (Card card : humanPlayer.getCardsPlayer()) {
             card.getCard().setDisable(false);
         }
+        takeCardButton.setDisable(false); // Deshabilitar el botón de tomar cartas
+        passTurnButton.setDisable(false);
+
     }
 }

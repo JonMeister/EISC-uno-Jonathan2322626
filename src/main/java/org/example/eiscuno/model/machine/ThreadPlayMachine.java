@@ -99,7 +99,15 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
                     System.out.println("La máquina tiró una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
                 });
 
-                return gameUno.handleSpecialCards(finalCardToPlay, machinePlayer); // Retorna verdadero si la carta especial requiere un turno adicional
+                boolean specialCard = gameUno.handleSpecialCards(finalCardToPlay, machinePlayer);
+                if (specialCard) {
+                    try {
+                        Thread.sleep(2000); // Espera de 2 segundos antes de la próxima jugada
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return specialCard; // Retorna verdadero si la carta especial requiere un turno adicional
             }
         } else {
             // Lógica para cuando no hay una carta válida (puede ser tomar una carta del mazo)
@@ -108,6 +116,38 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
                 System.out.println("La máquina se comió una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
                 notifyObservers(); // Notifica a los observadores para actualizar la vista
             });
+
+            // Verificar si después de comer una carta puede jugar alguna carta
+            for (Card card : machinePlayer.getCardsPlayer()) {
+                if (gameUno.isCardPlayable(card, topCard)) {
+                    cardToPlay = card;
+                    break;
+                }
+            }
+
+            if (cardToPlay != null) {
+                int pos = findPosCardsMachinePlayer(cardToPlay); // Encuentra la posición de la carta
+                if (pos != -1) {
+                    machinePlayer.removeCard(pos); // Remueve la carta de la mano del jugador
+                    table.addCardOnTheTable(cardToPlay); // Añade la carta a la mesa
+                    Card finalCardToPlay = cardToPlay;
+                    Platform.runLater(() -> {
+                        tableImageView.setImage(finalCardToPlay.getImage()); // Actualiza la imagen de la mesa
+                        notifyObservers(); // Notifica a los observadores para actualizar la vista
+                        System.out.println("La máquina tiró una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
+                    });
+
+                    boolean specialCard = gameUno.handleSpecialCards(finalCardToPlay, machinePlayer);
+                    if (specialCard) {
+                        try {
+                            Thread.sleep(2000); // Espera de 2 segundos antes de la próxima jugada
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    return specialCard; // Retorna verdadero si la carta especial requiere un turno adicional
+                }
+            }
         }
         return false; // Retorna falso si no se requiere un turno adicional
     }

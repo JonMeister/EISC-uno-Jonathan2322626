@@ -110,9 +110,11 @@ public class GameUno implements IGameUno {
                 }
                 return true;
             }
-            case "SKIP", "RESERVE" -> {
-                return true;
-            }
+            case "SKIP"-> {
+                return true;}
+            case "RESERVE"-> {
+                return true;}
+
             default -> {
                 return false;
             }
@@ -121,10 +123,11 @@ public class GameUno implements IGameUno {
 
     public boolean isCardPlayable(Card card, Card topCard) {
         // Permitir jugar cualquier carta si la carta en la cima es NON_COLOR
-        if (topCard.getColor().equals("NON_COLOR") || card.getColor().equals("NON_COLOR")) {
+        return true;
+      /*  if (topCard.getColor().equals("NON_COLOR") || card.getColor().equals("NON_COLOR")) {
             return true;
         }
-        return card.getColor().equals(topCard.getColor()) || card.getValue().equals(topCard.getValue());
+        return card.getColor().equals(topCard.getColor()) || card.getValue().equals(topCard.getValue());*/
     }
 
     /**
