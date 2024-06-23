@@ -4,13 +4,14 @@ import javafx.application.Platform;
 import javafx.scene.image.ImageView;
 import org.example.eiscuno.model.card.Card;
 import org.example.eiscuno.model.game.GameUno;
+import org.example.eiscuno.model.game.IGameEndObserver;
 import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ThreadPlayMachine extends Thread implements IMachineSubject {
+public class ThreadPlayMachine extends Thread implements IMachineSubject, IGameEndObserver {
     private Table table;
     private GameUno gameUno;
     private Player machinePlayer;
@@ -19,6 +20,8 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
     private List<IMachineObserver> observers = new ArrayList<>();
     private Runnable disablePlayerCards;
     private Runnable enablePlayerCards;
+    private boolean running = true;
+
 
     public ThreadPlayMachine(Table table, Player machinePlayer, ImageView tableImageView, GameUno gameUno, Runnable disablePlayerCards, Runnable enablePlayerCards) {
         this.table = table;
@@ -28,10 +31,12 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
         this.gameUno = gameUno;
         this.disablePlayerCards = disablePlayerCards;
         this.enablePlayerCards = enablePlayerCards;
+        gameUno.addGameEndObserver(this); // Agregar observador del final del juego
+
     }
 
     public void run() {
-        while (true) {
+        while (running) {
             if (hasPlayerPlayed) {
                 Platform.runLater(disablePlayerCards); // Deshabilitar las cartas del jugador
                 playTurn();
@@ -61,7 +66,7 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
                     e.printStackTrace();
                 }
             }
-        } while (specialCardPlayed);
+        } while (specialCardPlayed && running);
     }
 
     private boolean putCardOnTheTable() {
@@ -97,17 +102,12 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
                     tableImageView.setImage(finalCardToPlay.getImage()); // Actualiza la imagen de la mesa
                     notifyObservers(); // Notifica a los observadores para actualizar la vista
                     System.out.println("La máquina tiró una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
+                    if (gameUno.handleSpecialCards(finalCardToPlay, machinePlayer)) {
+                        notifyObservers(); // Actualiza la vista después de manejar cartas especiales
+                    }
                 });
 
-                boolean specialCard = gameUno.handleSpecialCards(finalCardToPlay, machinePlayer);
-                if (specialCard) {
-                    try {
-                        Thread.sleep(2000); // Espera de 2 segundos antes de la próxima jugada
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                return specialCard; // Retorna verdadero si la carta especial requiere un turno adicional
+                return gameUno.handleSpecialCards(finalCardToPlay, machinePlayer); // Retorna verdadero si la carta especial requiere un turno adicional
             }
         } else {
             // Lógica para cuando no hay una carta válida (puede ser tomar una carta del mazo)
@@ -116,38 +116,6 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
                 System.out.println("La máquina se comió una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
                 notifyObservers(); // Notifica a los observadores para actualizar la vista
             });
-
-            // Verificar si después de comer una carta puede jugar alguna carta
-            for (Card card : machinePlayer.getCardsPlayer()) {
-                if (gameUno.isCardPlayable(card, topCard)) {
-                    cardToPlay = card;
-                    break;
-                }
-            }
-
-            if (cardToPlay != null) {
-                int pos = findPosCardsMachinePlayer(cardToPlay); // Encuentra la posición de la carta
-                if (pos != -1) {
-                    machinePlayer.removeCard(pos); // Remueve la carta de la mano del jugador
-                    table.addCardOnTheTable(cardToPlay); // Añade la carta a la mesa
-                    Card finalCardToPlay = cardToPlay;
-                    Platform.runLater(() -> {
-                        tableImageView.setImage(finalCardToPlay.getImage()); // Actualiza la imagen de la mesa
-                        notifyObservers(); // Notifica a los observadores para actualizar la vista
-                        System.out.println("La máquina tiró una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
-                    });
-
-                    boolean specialCard = gameUno.handleSpecialCards(finalCardToPlay, machinePlayer);
-                    if (specialCard) {
-                        try {
-                            Thread.sleep(2000); // Espera de 2 segundos antes de la próxima jugada
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    return specialCard; // Retorna verdadero si la carta especial requiere un turno adicional
-                }
-            }
         }
         return false; // Retorna falso si no se requiere un turno adicional
     }
@@ -180,5 +148,16 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject {
         for (IMachineObserver observer : observers) {
             observer.updateMachineView();
         }
+    }
+    @Override
+    public void onGameEnd(String winner) {
+        running = false;
+    }
+    public void stopRunning() {
+        running = false;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 }

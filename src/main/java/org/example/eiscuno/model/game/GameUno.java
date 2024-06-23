@@ -1,20 +1,26 @@
 package org.example.eiscuno.model.game;
 
+import javafx.application.Platform;
 import org.example.eiscuno.model.card.Card;
 import org.example.eiscuno.model.deck.Deck;
 import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Represents a game of Uno.
  * This class manages the game logic and interactions between players, deck, and the table.
  */
-public class GameUno implements IGameUno {
+public class GameUno implements IGameUno, IGameEndSubject {
 
     private Player humanPlayer;
     private Player machinePlayer;
     private Deck deck;
     private Table table;
+    private List<IGameEndObserver> gameEndObservers = new ArrayList<>();
+
 
     /**
      * Constructs a new GameUno instance.
@@ -29,6 +35,9 @@ public class GameUno implements IGameUno {
         this.machinePlayer = machinePlayer;
         this.deck = deck;
         this.table = table;
+        this.gameEndObservers = new ArrayList<>();
+        deck.setPlayers(humanPlayer, machinePlayer); // Establecer jugadores en la baraja
+
     }
 
     /**
@@ -51,6 +60,8 @@ public class GameUno implements IGameUno {
             initialCard = deck.takeCard();
         } while (!isNumericCard(initialCard));
         table.addCardOnTheTable(initialCard);
+        deck.addPlayedCard(initialCard); // Añadir la carta inicial a las jugadas
+
     }
     private boolean isNumericCard(Card card) {
         try {
@@ -69,9 +80,11 @@ public class GameUno implements IGameUno {
      */
     @Override
     public void eatCard(Player player, int numberOfCards) {
+        checkGameEnd();
         for (int i = 0; i < numberOfCards; i++) {
             player.addCard(this.deck.takeCard());
         }
+
     }
 
     /**
@@ -82,6 +95,10 @@ public class GameUno implements IGameUno {
     @Override
     public void playCard(Card card) {
         this.table.addCardOnTheTable(card);
+        this.deck.addPlayedCard(card); // Añadir la carta a las jugadas
+        Platform.runLater(this::checkGameEnd);
+
+
     }
     public boolean handleSpecialCards(Card card, Player player) {
         // Verifica si la carta jugada es una carta +2
@@ -95,6 +112,7 @@ public class GameUno implements IGameUno {
                     // El jugador humano toma 2 cartas
                     eatCard(humanPlayer, 2);
                 }
+                checkGameEnd();
                 return true;
             }
 
@@ -108,14 +126,18 @@ public class GameUno implements IGameUno {
                     // El jugador humano toma 4 cartas
                     eatCard(humanPlayer, 4);
                 }
+                checkGameEnd();
                 return true;
             }
             case "SKIP"-> {
+                checkGameEnd();
                 return true;}
             case "RESERVE"-> {
+                checkGameEnd();
                 return true;}
 
             default -> {
+                checkGameEnd();
                 return false;
             }
         }
@@ -170,6 +192,30 @@ public class GameUno implements IGameUno {
      */
     @Override
     public Boolean isGameOver() {
-        return null;
+        return humanPlayer.getCardsPlayer().isEmpty() || machinePlayer.getCardsPlayer().isEmpty();
+    }
+
+    @Override
+    public void addGameEndObserver(IGameEndObserver observer) {
+        gameEndObservers.add(observer);
+    }
+
+    @Override
+    public void removeGameEndObserver(IGameEndObserver observer) {
+        gameEndObservers.remove(observer);
+    }
+
+    @Override
+    public void notifyGameEndObservers(String winner) {
+        for (IGameEndObserver observer : gameEndObservers) {
+            observer.onGameEnd(winner);
+        }
+    }
+
+    private void checkGameEnd() {
+        if (isGameOver()) {
+            String winner = humanPlayer.getCardsPlayer().isEmpty() ? "Human Player" : "Machine Player";
+            notifyGameEndObservers(winner);
+        }
     }
 }

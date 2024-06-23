@@ -3,6 +3,7 @@ package org.example.eiscuno.controller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -11,13 +12,15 @@ import javafx.scene.layout.GridPane;
 import org.example.eiscuno.model.card.Card;
 import org.example.eiscuno.model.deck.Deck;
 import org.example.eiscuno.model.game.GameUno;
+import org.example.eiscuno.model.game.IGameEndObserver;
 import org.example.eiscuno.model.machine.IMachineObserver;
 import org.example.eiscuno.model.machine.ThreadPlayMachine;
 import org.example.eiscuno.model.machine.ThreadSingUNOMachine;
 import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
+import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 
-public class GameUnoController implements IMachineObserver {
+public class GameUnoController implements IMachineObserver, IGameEndObserver {
 
     @FXML
     private GridPane gridPaneCardsMachine;
@@ -31,6 +34,10 @@ public class GameUnoController implements IMachineObserver {
     private Button takeCardButton;
     @FXML
     private Button passTurnButton;
+    @FXML
+    private Button unoButton;
+    @FXML
+    private Button attackUnoButton;
 
     private Player humanPlayer;
     private Player machinePlayer;
@@ -42,15 +49,21 @@ public class GameUnoController implements IMachineObserver {
     private ThreadSingUNOMachine threadSingUNOMachine;
     private ThreadPlayMachine threadPlayMachine;
 
+    private volatile boolean humanPlayerCanSingUNO = true;
+    private volatile boolean machineCanSingUNO = true;
+
+
+
     @FXML
     public void initialize() {
         initVariables();
         this.gameUno.startGame();
+        this.gameUno.addGameEndObserver(this); // Agregar observador del final del juego
         updateTableImageView();
         printCardsHumanPlayer();
         printCardsMachinePlayer(); // Inicializa las cartas de la máquina
 
-        threadSingUNOMachine = new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer());
+        threadSingUNOMachine = new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer(), this::machineCallsUNO);
         Thread t = new Thread(threadSingUNOMachine, "ThreadSingUNO");
         t.start();
         threadPlayMachine = new ThreadPlayMachine(this.table, this.machinePlayer, this.tableImageView,this.gameUno,this::disablePlayerCards,this::enablePlayerCards);
@@ -67,6 +80,8 @@ public class GameUnoController implements IMachineObserver {
         this.posInitCardToShow = 0;
         takeCardButton.setDisable(false); // Habilitar el botón al iniciar el juego
         passTurnButton.setDisable(true);
+        unoButton.setDisable(true);
+        attackUnoButton.setDisable(true);
 
     }
 
@@ -88,6 +103,11 @@ public class GameUnoController implements IMachineObserver {
                     tableImageView.setImage(card.getImage());
                     humanPlayer.removeCard(findPosCardsHumanPlayer(card));
                     printCardsHumanPlayer();
+                    printCardsMachinePlayer();
+                    if (humanPlayer.getCardsPlayer().size() == 1) {
+                        unoButton.setDisable(false);
+                        humanPlayerCanSingUNO = true;
+                    }
                 } else {
                     // Mostrar un mensaje o alerta indicando que la carta no es válida
                     System.out.println("Carta no válida. Debes jugar una carta del mismo color o número.");
@@ -109,6 +129,22 @@ public class GameUnoController implements IMachineObserver {
             gridPaneCardsMachine.add(cardImageView, i, 0);
 
             cardImageView.setUserData(machinePlayer.getCardsPlayer().get(i));
+        }
+        if (machinePlayer.getCardsPlayer().size() == 1) {
+            attackUnoButton.setDisable(false);
+            new Thread(() -> {
+                try {
+                    Thread.sleep(2000 + (long) (Math.random() * 3000));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                Platform.runLater(() -> {
+                    machineCanSingUNO = true;
+                    attackUnoButton.setDisable(true);
+                });
+            }).start();
+        } else {
+            attackUnoButton.setDisable(true);
         }
     }
 
@@ -150,12 +186,38 @@ public class GameUnoController implements IMachineObserver {
     @FXML
     void onHandleUno(ActionEvent event) {
         // Implement logic to handle Uno event here
+        if (humanPlayer.getCardsPlayer().size() == 1 && humanPlayerCanSingUNO) {
+            humanPlayerCanSingUNO = false;
+            unoButton.setDisable(true);
+        } else {
+            unoButton.setDisable(true);
+            printCardsHumanPlayer();
+        }
+    }
+    @FXML
+    void onHandleAttackUno(ActionEvent event) {
+        humanCallsUNO();
     }
     @FXML
     void onHandlePassTurn(ActionEvent event) {
         threadPlayMachine.setHasPlayerPlayed(true); // Pasar el turno a la máquina
         takeCardButton.setDisable(true); // Deshabilitar el botón de tomar carta
         passTurnButton.setDisable(true); // Deshabilitar el botón de pasar turno
+    }
+
+    @FXML
+    void onHandleExit(ActionEvent event) {
+        // Detener los hilos de la máquina y cantar UNO
+        if (threadSingUNOMachine != null && threadSingUNOMachine.isRunning()) {
+            threadSingUNOMachine.stopRunning();
+        }
+        if (threadPlayMachine != null && threadPlayMachine.isRunning()) {
+            threadPlayMachine.stopRunning();
+        }
+
+        // Cerrar la ventana actual
+        Platform.exit();
+        System.exit(0);
     }
 
     @Override
@@ -185,5 +247,39 @@ public class GameUnoController implements IMachineObserver {
         takeCardButton.setDisable(false); // Deshabilitar el botón de tomar cartas
         passTurnButton.setDisable(false);
 
+    }
+    private void machineCallsUNO() {
+        Platform.runLater(() -> {
+            if (humanPlayer.getCardsPlayer().size() == 1 && humanPlayerCanSingUNO) {
+                gameUno.eatCard(humanPlayer, 1);
+                printCardsHumanPlayer();
+            }
+        });
+    }
+
+    private void humanCallsUNO() {
+        Platform.runLater(() -> {
+            if (machinePlayer.getCardsPlayer().size() == 1) {
+                gameUno.eatCard(machinePlayer, 1);
+                printCardsMachinePlayer();
+            }
+        });
+
+    }
+    @Override
+    public void onGameEnd(String winner) {
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Fin del Juego");
+            alert.setHeaderText(null);
+            alert.setContentText("El juego ha terminado. El ganador es: " + winner);
+            alert.showAndWait();
+            unoButton.setDisable(true);
+            passTurnButton.setDisable(true);
+            takeCardButton.setDisable(true);
+            attackUnoButton.setDisable(true);
+            disablePlayerCards();
+        });
     }
 }
