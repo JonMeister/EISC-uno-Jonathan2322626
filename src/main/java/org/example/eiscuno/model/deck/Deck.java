@@ -1,9 +1,12 @@
 package org.example.eiscuno.model.deck;
 
-import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 import org.example.eiscuno.model.card.Card;
+import org.example.eiscuno.model.player.Player;
+import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Stack;
 
 /**
@@ -11,12 +14,16 @@ import java.util.Stack;
  */
 public class Deck {
     private Stack<Card> deckOfCards;
+    private List<Card> playedCards; // Lista para mantener las cartas jugadas
+    private Player humanPlayer;
+    private Player machinePlayer;
 
     /**
      * Constructs a new deck of Uno cards and initializes it.
      */
     public Deck() {
         deckOfCards = new Stack<>();
+        playedCards = new ArrayList<>();
         initializeDeck();
     }
 
@@ -44,25 +51,25 @@ public class Deck {
     }
 
     private String getCardValue(String name) {
-        if (name.endsWith("0")){
+        if (name.endsWith("0")) {
             return "0";
-        } else if (name.endsWith("1")){
+        } else if (name.endsWith("1")) {
             return "1";
-        } else if (name.endsWith("2")){
+        } else if (name.endsWith("2")) {
             return "2";
-        } else if (name.endsWith("3")){
+        } else if (name.endsWith("3")) {
             return "3";
-        } else if (name.endsWith("4")){
+        } else if (name.endsWith("4")) {
             return "4";
-        } else if (name.endsWith("5")){
+        } else if (name.endsWith("5")) {
             return "5";
-        } else if (name.endsWith("6")){
+        } else if (name.endsWith("6")) {
             return "6";
-        } else if (name.endsWith("7")){
+        } else if (name.endsWith("7")) {
             return "7";
-        } else if (name.endsWith("8")){
+        } else if (name.endsWith("8")) {
             return "8";
-        } else if (name.endsWith("9")){
+        } else if (name.endsWith("9")) {
             return "9";
         } else if (name.contains("RESERVE")) {
             return "RESERVE";
@@ -80,14 +87,14 @@ public class Deck {
 
     }
 
-    private String getCardColor(String name){
-        if(name.contains("GREEN")){
+    private String getCardColor(String name) {
+        if (name.contains("GREEN")) {
             return "GREEN";
-        } else if(name.contains("YELLOW")){
+        } else if (name.contains("YELLOW")) {
             return "YELLOW";
-        } else if(name.contains("BLUE")){
+        } else if (name.contains("BLUE")) {
             return "BLUE";
-        } else if(name.contains("RED")){
+        } else if (name.contains("RED")) {
             return "RED";
         } else {
             return "NON_COLOR";
@@ -102,9 +109,46 @@ public class Deck {
      */
     public Card takeCard() {
         if (deckOfCards.isEmpty()) {
-            throw new IllegalStateException("No hay más cartas en el mazo.");
+            replenishDeck();
+            if (deckOfCards.isEmpty()) {
+                throw new IllegalStateException("No hay más cartas en el mazo.");
+            }
         }
         return deckOfCards.pop();
+    }
+
+    /**
+     * Replenishes the deck with the played cards, excluding the cards in hands of players.
+     */
+    private void replenishDeck() {
+        List<Card> cardsToReplenish = new ArrayList<>(playedCards);
+        playedCards.clear();
+
+        cardsToReplenish.removeAll(humanPlayer.getCardsPlayer());
+        cardsToReplenish.removeAll(machinePlayer.getCardsPlayer());
+
+        Collections.shuffle(cardsToReplenish);
+        deckOfCards.addAll(cardsToReplenish);
+    }
+
+    /**
+     * Adds a card to the list of played cards.
+     *
+     * @param card the card to add
+     */
+    public void addPlayedCard(Card card) {
+        playedCards.add(card);
+    }
+
+    /**
+     * Sets the players in the game. This is necessary to exclude their cards when replenishing the deck.
+     *
+     * @param humanPlayer   the human player
+     * @param machinePlayer the machine player
+     */
+    public void setPlayers(Player humanPlayer, Player machinePlayer) {
+        this.humanPlayer = humanPlayer;
+        this.machinePlayer = machinePlayer;
     }
 
     /**
