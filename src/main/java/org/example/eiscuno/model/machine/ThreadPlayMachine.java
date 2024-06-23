@@ -25,6 +25,7 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject, IGameE
     private Runnable disablePlayerCards;
     private Runnable enablePlayerCards;
     private boolean running = true;
+    private boolean isSpecial=false;
 
     /**
      * Constructs a new ThreadPlayMachine instance.
@@ -68,7 +69,7 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject, IGameE
         boolean specialCardPlayed;
         do {
             try {
-                Thread.sleep(2000 + (long) (Math.random() * 3000)); // Wait for 2 to 5 seconds before each move
+                Thread.sleep(2000); // Wait for 2 seconds before each move
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -78,7 +79,7 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject, IGameE
 
             if (specialCardPlayed) {
                 try {
-                    Thread.sleep(2000 + (long) (Math.random() * 3000)); // Wait for 2 to 5 seconds if a special card was played
+                    Thread.sleep(2000); // Wait for 2 seconds if a special card was played
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -124,12 +125,13 @@ public class ThreadPlayMachine extends Thread implements IMachineSubject, IGameE
                     tableImageView.setImage(finalCardToPlay.getImage());
                     notifyObservers();
                     System.out.println("La máquina tiró una carta. Le quedan " + machinePlayer.getCardsPlayer().size() + " cartas.");
-                    if (gameUno.handleSpecialCards(finalCardToPlay, machinePlayer)) {
+                    this.isSpecial=gameUno.handleSpecialCards(finalCardToPlay, machinePlayer);
+                    if (isSpecial) {
                         notifyObservers();
                     }
                 });
 
-                return gameUno.handleSpecialCards(finalCardToPlay, machinePlayer);
+                return isSpecial;
             }
         } else {
             // If no valid card is found, draw a card from the deck
