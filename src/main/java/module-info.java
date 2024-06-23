@@ -7,4 +7,6 @@ module org.example.eiscuno {
     opens org.example.eiscuno to javafx.fxml;
     opens org.example.eiscuno.controller to javafx.fxml;
     exports org.example.eiscuno;
+    exports org.example.eiscuno.model.game to javafx.graphics;
+
 }

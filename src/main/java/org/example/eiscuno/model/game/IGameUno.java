@@ -50,4 +50,21 @@ public interface IGameUno {
      */
     Boolean isGameOver();
 
+    /**
+     * Determines if a card can be played based on the current card on the table.
+     *
+     * @param card the card to be played
+     * @param topCard the current card on the table
+     * @return true if the card can be played, false otherwise
+     */
+    boolean isCardPlayable(Card card, Card topCard);
+
+    /**
+     * Handles special cards and their effects.
+     *
+     * @param card the special card played
+     * @param player the player who played the card
+     * @return true if the card requires an additional turn, false otherwise
+     */
+    boolean handleSpecialCards(Card card, Player player);
 }

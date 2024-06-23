@@ -21,7 +21,6 @@ public class GameUno implements IGameUno, IGameEndSubject {
     private Table table;
     private List<IGameEndObserver> gameEndObservers = new ArrayList<>();
 
-
     /**
      * Constructs a new GameUno instance.
      *
@@ -36,8 +35,7 @@ public class GameUno implements IGameUno, IGameEndSubject {
         this.deck = deck;
         this.table = table;
         this.gameEndObservers = new ArrayList<>();
-        deck.setPlayers(humanPlayer, machinePlayer); // Establecer jugadores en la baraja
-
+        deck.setPlayers(humanPlayer, machinePlayer); // Set players in the deck
     }
 
     /**
@@ -54,15 +52,21 @@ public class GameUno implements IGameUno, IGameEndSubject {
             }
         }
 
-        // Lanzar una carta numérica al iniciar el juego
+        // Play a numeric card to start the game
         Card initialCard;
         do {
             initialCard = deck.takeCard();
         } while (!isNumericCard(initialCard));
         table.addCardOnTheTable(initialCard);
-        deck.addPlayedCard(initialCard); // Añadir la carta inicial a las jugadas
-
+        deck.addPlayedCard(initialCard); // Add the initial card to the played cards
     }
+
+    /**
+     * Checks if a card is numeric.
+     *
+     * @param card The card to check.
+     * @return True if the card is numeric, false otherwise.
+     */
     private boolean isNumericCard(Card card) {
         try {
             Integer.parseInt(card.getValue());
@@ -84,7 +88,6 @@ public class GameUno implements IGameUno, IGameEndSubject {
         for (int i = 0; i < numberOfCards; i++) {
             player.addCard(this.deck.takeCard());
         }
-
     }
 
     /**
@@ -95,47 +98,48 @@ public class GameUno implements IGameUno, IGameEndSubject {
     @Override
     public void playCard(Card card) {
         this.table.addCardOnTheTable(card);
-        this.deck.addPlayedCard(card); // Añadir la carta a las jugadas
+        this.deck.addPlayedCard(card); // Add the card to the played cards
         Platform.runLater(this::checkGameEnd);
-
-
     }
+
+    /**
+     * Handles special cards like +2, +4, SKIP, and REVERSE.
+     *
+     * @param card   The card to handle.
+     * @param player The player who played the card.
+     * @return True if the card is a special card that requires a turn change, false otherwise.
+     */
     public boolean handleSpecialCards(Card card, Player player) {
-        // Verifica si la carta jugada es una carta +2
         switch (card.getValue()) {
             case "+2" -> {
-                // Si la carta jugada pertenece al jugador humano
                 if (player.equals(humanPlayer)) {
-                    // El jugador máquina toma 2 cartas
                     eatCard(machinePlayer, 2);
+                    System.out.println("Human Player hace comer +2 a la máquina.");
                 } else {
-                    // El jugador humano toma 2 cartas
                     eatCard(humanPlayer, 2);
+                    System.out.println("Machine Player hace comer +2 a la persona.");
+
                 }
                 checkGameEnd();
                 return true;
             }
-
-            // Verifica si la carta jugada es una carta +4
             case "+4" -> {
-                // Si la carta jugada pertenece al jugador humano
                 if (player.equals(humanPlayer)) {
-                    // El jugador máquina toma 4 cartas
                     eatCard(machinePlayer, 4);
+                    System.out.println("Human Player hace comer +4 a la máquina.");
+
                 } else {
-                    // El jugador humano toma 4 cartas
                     eatCard(humanPlayer, 4);
+                    System.out.println("Machine Player hace comer +4 a la persona.");
+
                 }
                 checkGameEnd();
                 return true;
             }
-            case "SKIP"-> {
+            case "SKIP", "RESERVE" -> {
                 checkGameEnd();
-                return true;}
-            case "RESERVE"-> {
-                checkGameEnd();
-                return true;}
-
+                return true;
+            }
             default -> {
                 checkGameEnd();
                 return false;
@@ -143,13 +147,19 @@ public class GameUno implements IGameUno, IGameEndSubject {
         }
     }
 
+    /**
+     * Checks if a card can be played on top of another card.
+     *
+     * @param card    The card to be played.
+     * @param topCard The card on top of the table.
+     * @return True if the card can be played, false otherwise.
+     */
     public boolean isCardPlayable(Card card, Card topCard) {
-        // Permitir jugar cualquier carta si la carta en la cima es NON_COLOR
-        return true;
-      /*  if (topCard.getColor().equals("NON_COLOR") || card.getColor().equals("NON_COLOR")) {
+        // Allow playing any card if the top card is NON_COLOR
+        if (topCard.getColor().equals("NON_COLOR") || card.getColor().equals("NON_COLOR")) {
             return true;
         }
-        return card.getColor().equals(topCard.getColor()) || card.getValue().equals(topCard.getValue());*/
+        return card.getColor().equals(topCard.getColor()) || card.getValue().equals(topCard.getValue());
     }
 
     /**
@@ -195,16 +205,31 @@ public class GameUno implements IGameUno, IGameEndSubject {
         return humanPlayer.getCardsPlayer().isEmpty() || machinePlayer.getCardsPlayer().isEmpty();
     }
 
+    /**
+     * Adds an observer for the game end.
+     *
+     * @param observer The observer to add.
+     */
     @Override
     public void addGameEndObserver(IGameEndObserver observer) {
         gameEndObservers.add(observer);
     }
 
+    /**
+     * Removes an observer for the game end.
+     *
+     * @param observer The observer to remove.
+     */
     @Override
     public void removeGameEndObserver(IGameEndObserver observer) {
         gameEndObservers.remove(observer);
     }
 
+    /**
+     * Notifies all observers that the game has ended.
+     *
+     * @param winner The winner of the game.
+     */
     @Override
     public void notifyGameEndObservers(String winner) {
         for (IGameEndObserver observer : gameEndObservers) {
@@ -212,6 +237,9 @@ public class GameUno implements IGameUno, IGameEndSubject {
         }
     }
 
+    /**
+     * Checks if the game has ended and notifies observers if it has.
+     */
     private void checkGameEnd() {
         if (isGameOver()) {
             String winner = humanPlayer.getCardsPlayer().isEmpty() ? "Human Player" : "Machine Player";
