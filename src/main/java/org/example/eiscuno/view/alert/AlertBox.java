@@ -5,7 +5,7 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 /**
- * This class provides methods to display different types of alert messages in the sudoku app.
+ * This class provides methods to display different types of alert messages in the UNO app.
  * Implements IAlertbox
  * @author Jonathan Aristizabal
  * @version 1.0
