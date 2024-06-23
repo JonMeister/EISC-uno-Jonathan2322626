@@ -5,10 +5,11 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.*;
 import org.example.eiscuno.model.card.Card;
 import org.example.eiscuno.model.deck.Deck;
 import org.example.eiscuno.model.game.GameUno;
@@ -27,6 +28,10 @@ public class GameUnoController implements IMachineObserver, IGameEndObserver {
 
     @FXML
     private GridPane gridPaneCardsPlayer;
+    @FXML
+    private BorderPane mainScene;
+    @FXML
+    private Label unoIcon;
 
     @FXML
     private ImageView tableImageView;
@@ -34,6 +39,8 @@ public class GameUnoController implements IMachineObserver, IGameEndObserver {
     private Button takeCardButton;
     @FXML
     private Button passTurnButton;
+    @FXML
+    private Button exitButton;
     @FXML
     private Button unoButton;
     @FXML
@@ -69,6 +76,8 @@ public class GameUnoController implements IMachineObserver, IGameEndObserver {
         threadPlayMachine = new ThreadPlayMachine(this.table, this.machinePlayer, this.tableImageView,this.gameUno,this::disablePlayerCards,this::enablePlayerCards);
         threadPlayMachine.attach(this); // Suscribirse a las notificaciones del hilo
         threadPlayMachine.start();
+        // Añadir imágenes a los botones
+        addImages();
     }
 
     private void initVariables() {
@@ -83,6 +92,55 @@ public class GameUnoController implements IMachineObserver, IGameEndObserver {
         unoButton.setDisable(true);
         attackUnoButton.setDisable(true);
 
+    }
+    private void addImages() {
+        // Crear ImageView para takeCardButton
+        ImageView takeCardImageView = new ImageView(new Image(getClass().getResource(EISCUnoEnum.DECK_OF_CARDS.getFilePath()).toString()));
+        takeCardImageView.setFitWidth(100); // Establece el ancho deseado
+        takeCardImageView.setFitHeight(110); // Establece la altura deseada
+        takeCardButton.setGraphic(takeCardImageView);
+
+        // Crear ImageView para unoButton
+        ImageView unoImageView = new ImageView(new Image(getClass().getResource(EISCUnoEnum.BUTTON_UNO.getFilePath()).toString()));
+        unoImageView.setFitWidth(50); // Establece el ancho deseado
+        unoImageView.setFitHeight(50); // Establece la altura deseada
+        unoButton.setGraphic(unoImageView);
+
+        // Crear ImageView para attackUnoButton
+        ImageView attackUnoImageView = new ImageView(new Image(getClass().getResource(EISCUnoEnum.BUTTON_UNO.getFilePath()).toString()));
+        attackUnoImageView.setFitWidth(50); // Establece el ancho deseado
+        attackUnoImageView.setFitHeight(50); // Establece la altura deseada
+        attackUnoButton.setGraphic(attackUnoImageView);
+
+        // Crear ImageView para exitButton
+        ImageView exitImageView = new ImageView(new Image(getClass().getResource(EISCUnoEnum.EXIT.getFilePath()).toString()));
+        exitImageView.setFitWidth(70); // Establece el ancho deseado
+        exitImageView.setFitHeight(40); // Establece la altura deseada
+        exitButton.setGraphic(exitImageView);
+
+        // Cargar la imagen
+        Image backgroundImage = new Image(getClass().getResource(EISCUnoEnum.BACKGROUND_UNO.getFilePath()).toString());
+
+        // Crear un BackgroundImage
+        BackgroundImage background = new BackgroundImage(backgroundImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.DEFAULT,
+                new BackgroundSize(BackgroundSize.AUTO, BackgroundSize.AUTO, true, true, true, true));
+
+        // Establecer el fondo en el BorderPane
+        mainScene.setBackground(new Background(background));
+
+        // Cargar la imagen
+        Image iconImage = new Image(getClass().getResource(EISCUnoEnum.UNO.getFilePath()).toString());
+
+        // Crear un ImageView y establecer el tamaño si es necesario
+        ImageView iconImageView = new ImageView(iconImage);
+        iconImageView.setFitWidth(100); // Ajusta el tamaño según sea necesario
+        iconImageView.setFitHeight(100); // Ajusta el tamaño según sea necesario
+
+        // Establecer el ImageView como el gráfico del Label
+        unoIcon.setGraphic(iconImageView);
     }
 
     private void printCardsHumanPlayer() {
